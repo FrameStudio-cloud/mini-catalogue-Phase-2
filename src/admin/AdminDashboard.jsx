@@ -86,7 +86,7 @@ async function saveProduct() {
       formData.append("image", imageFile);
 
       const res = await fetch(
-        "https://api.imgbb.com/1/upload?key=YOUR_API_KEY",
+        "https://api.imgbb.com/1/upload?key=949b03f2004008aa92d1b37cbfe75124",
         {
           method: "POST",
           body: formData,
@@ -374,7 +374,7 @@ async function saveProduct() {
                   !form.name ||
                   !form.price ||
                   !form.category ||
-                  !form.image
+                  (!imageFile && !editingProduct)
                 }
                 className="px-6 py-2 text-sm font-medium text-white transition-colors rounded-lg bg-primary hover:bg-accent disabled:opacity-50"
               >

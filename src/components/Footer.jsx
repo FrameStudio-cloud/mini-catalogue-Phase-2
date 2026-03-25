@@ -1,6 +1,7 @@
 import { FaWhatsapp, FaInstagram, FaFacebook, FaTiktok } from 'react-icons/fa'
 import { MdLocationOn, MdAccessTime, MdEmail, MdPhone } from 'react-icons/md'
 import shop from '../config/shop'
+import { Link } from 'react-router-dom'
 
 function Footer() {
   const currentYear = new Date().getFullYear()
@@ -20,13 +21,15 @@ function Footer() {
     { icon: <MdEmail size={18} className="text-accent mt-0.5 flex-shrink-0" />, content: <a href={`mailto:${shop.email}`} className="transition-colors hover:text-accent">{shop.email}</a> },
   ]
 
-  const links = [
-    { label: 'Home', href: '#home' },
-    { label: 'Catalogue', href: '#catalogue' },
-    { label: 'About Us', href: '#about' },
-    { label: 'Contact', href: '#contact' },
-    { label: 'Admin', href: 'admin' }
-  ]
+
+    const links = [
+  { label: 'Home', href: '#home', internal: false },
+  { label: 'Catalogue', href: '#catalogue', internal: false },
+  { label: 'About Us', href: '#about', internal: false },
+  { label: 'Contact', href: '#contact', internal: false },
+  { label: 'Admin', href: '/admin', internal: true }  // ← fixed
+]
+  
 
   return (
     <footer id="contact" className="text-white bg-primary">

@@ -35,12 +35,13 @@ function Footer() {
     <footer id="contact" className="text-white bg-primary">
       <div className="max-w-6xl px-4 py-16 mx-auto">
         <div className="grid grid-cols-1 gap-12 md:grid-cols-3">
-
           {/* Brand */}
           <div>
             <div className="flex items-center gap-2 mb-4">
               <span className="text-2xl font-bold">{shop.name}</span>
-              <span className="text-2xl font-light text-accent">{shop.nameAccent}</span>
+              <span className="text-2xl font-light text-accent">
+                {shop.nameAccent}
+              </span>
             </div>
             <p className="mb-6 leading-relaxed text-gray-400">
               {shop.description}
@@ -66,9 +67,21 @@ function Footer() {
             <ul className="space-y-3">
               {links.map((link, index) => (
                 <li key={index}>
-                  <a href={link.href} className="text-gray-400 transition-colors hover:text-accent">
-                    {link.label}
-                  </a>
+                  {link.internal ? (
+                    <Link
+                      to={link.href}
+                      className="text-gray-400 transition-colors hover:text-accent"
+                    >
+                      {link.label}
+                    </Link>
+                  ) : (
+                    <a
+                      href={link.href}
+                      className="text-gray-400 transition-colors hover:text-accent"
+                    >
+                      {link.label}
+                    </a>
+                  )}
                 </li>
               ))}
             </ul>
@@ -79,7 +92,10 @@ function Footer() {
             <h3 className="mb-6 text-lg font-semibold">Get In Touch</h3>
             <ul className="space-y-4">
               {contactItems.map((item, index) => (
-                <li key={index} className="flex items-start gap-3 text-gray-400">
+                <li
+                  key={index}
+                  className="flex items-start gap-3 text-gray-400"
+                >
                   {item.icon}
                   <span>{item.content}</span>
                 </li>
@@ -95,7 +111,6 @@ function Footer() {
               Chat on WhatsApp
             </a>
           </div>
-
         </div>
       </div>
 
@@ -119,7 +134,7 @@ function Footer() {
         </div>
       </div>
     </footer>
-  )
+  );
 }
 
 export default Footer

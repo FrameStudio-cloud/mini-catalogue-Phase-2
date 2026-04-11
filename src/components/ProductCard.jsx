@@ -29,8 +29,7 @@ function ProductCard({ product }) {
   }
 
   return (
-    <div className="overflow-hidden transition-shadow bg-white border border-gray-100 rounded-xl hover:shadow-md group">
-
+    <div className="overflow-hidden transition-shadow bg-white border border-gray-100 rounded-xl hover:shadow-md group border-accent">
       {/* Image */}
       <div className="relative overflow-hidden h-44">
         <img
@@ -66,14 +65,15 @@ function ProductCard({ product }) {
           <div className="mb-2">
             <p className="mb-1 text-xs text-gray-400">Size:</p>
             <div className="flex flex-wrap gap-1">
-              {product.sizes.map(size => (
+              {product.sizes.map((size) => (
                 <button
                   key={size}
                   onClick={() => setSelectedSize(size)}
                   className={`text-xs px-2 py-0.5 rounded border transition-colors
-                    ${selectedSize === size
-                      ? 'bg-primary text-white border-primary'
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-primary'
+                    ${
+                      selectedSize === size
+                        ? "bg-primary text-white border-primary"
+                        : "bg-white text-gray-600 border-gray-200 hover:border-primary"
                     }`}
                 >
                   {size}
@@ -88,14 +88,15 @@ function ProductCard({ product }) {
           <div className="mb-2">
             <p className="mb-1 text-xs text-gray-400">Color:</p>
             <div className="flex flex-wrap gap-1">
-              {product.colors.map(color => (
+              {product.colors.map((color) => (
                 <button
                   key={color}
                   onClick={() => setSelectedColor(color)}
                   className={`text-xs px-2 py-0.5 rounded border transition-colors
-                    ${selectedColor === color
-                      ? 'bg-primary text-white border-primary'
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-primary'
+                    ${
+                      selectedColor === color
+                        ? "bg-primary text-white border-primary"
+                        : "bg-white text-gray-600 border-gray-200 hover:border-primary"
                     }`}
                 >
                   {color}
@@ -106,9 +107,7 @@ function ProductCard({ product }) {
         )}
 
         {/* Error */}
-        {error && (
-          <p className="mb-2 text-xs text-red-500">{error}</p>
-        )}
+        {error && <p className="mb-2 text-xs text-red-500">{error}</p>}
 
         {/* Price + Button */}
         <div className="flex items-center justify-between mt-2">
@@ -120,14 +119,15 @@ function ProductCard({ product }) {
             <button
               onClick={handleAddToCart}
               className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all
-                ${added
-                  ? 'bg-green-500 text-white scale-95'
-                  : selectedSize && selectedColor
-                    ? 'bg-primary hover:bg-accent text-white'
-                    : 'bg-gray-200 text-gray-500'
+                ${
+                  added
+                    ? "bg-green-500 text-white scale-95"
+                    : selectedSize && selectedColor
+                      ? "bg-primary hover:bg-accent text-white"
+                      : "bg-gray-200 text-gray-500"
                 }`}
             >
-              {added ? '✓ Added!' : 'Add to Cart'}
+              {added ? "✓ Added!" : "Add to Cart"}
             </button>
           ) : (
             <button
@@ -138,10 +138,9 @@ function ProductCard({ product }) {
             </button>
           )}
         </div>
-
       </div>
     </div>
-  )
+  );
 }
 
 ProductCard.propTypes = {

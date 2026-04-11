@@ -5,6 +5,7 @@ import { FaWhatsapp } from 'react-icons/fa'
 import shop from '../config/shop'
 import { useCart } from '../context/CartContext'
 import { FiShoppingBag } from 'react-icons/fi'
+import { ModeToggle } from './ModeToggle'
 
 function Navbar() {
   const [scrolled, setScrolled] = useState(false)
@@ -25,15 +26,17 @@ function Navbar() {
   ]
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300
-      ${scrolled ? 'bg-white shadow-md py-3' : 'bg-transparent py-5'}`}
+    <nav
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300
+      ${scrolled ? "bg-white shadow-md py-3" : "bg-transparent py-5"}`}
     >
       <div className="flex items-center justify-between max-w-6xl px-4 mx-auto">
-
         {/* Logo */}
         <a href="#home" className="flex items-center gap-1">
-          <span className={`text-2xl font-bold transition-colors
-            ${scrolled ? 'text-primary' : 'text-white'}`}>
+          <span
+            className={`text-2xl font-bold transition-colors
+            ${scrolled ? "text-primary" : "text-white"}`}
+          >
             {shop.name}
           </span>
           <span className="text-2xl font-light text-accent">
@@ -43,12 +46,12 @@ function Navbar() {
 
         {/* Desktop Links */}
         <div className="items-center hidden gap-8 md:flex">
-          {links.map(link => (
+          {links.map((link) => (
             <a
               key={link.label}
               href={link.href}
               className={`text-sm font-medium transition-colors hover:text-accent
-                ${scrolled ? 'text-gray-600' : 'text-white'}`}
+                ${scrolled ? "text-gray-600" : "text-white"}`}
             >
               {link.label}
             </a>
@@ -71,25 +74,29 @@ function Navbar() {
             onClick={() => setMenuOpen(!menuOpen)}
             className="p-2 md:hidden"
           >
-            {menuOpen
-              ? <FiX size={24} className={scrolled ? 'text-primary' : 'text-white'} />
-              : <FiMenu size={24} className={scrolled ? 'text-primary' : 'text-white'} />
-            }
+            {menuOpen ? (
+              <FiX
+                size={24}
+                className={scrolled ? "text-primary" : "text-white"}
+              />
+            ) : (
+              <FiMenu
+                size={24}
+                className={scrolled ? "text-primary" : "text-white"}
+              />
+            )}
           </button>
-          <button
-  onClick={() => setCartOpen(true)}
-  className="relative p-2"
->
-  <FiShoppingBag
-    size={22}
-    className={scrolled ? 'text-primary' : 'text-white'}
-  />
-  {totalItems > 0 && (
-    <span className="absolute flex items-center justify-center w-5 h-5 text-xs font-bold text-white rounded-full -top-1 -right-1 bg-accent">
-      {totalItems}
-    </span>
-  )}
-</button>
+          <button onClick={() => setCartOpen(true)} className="relative p-2">
+            <FiShoppingBag
+              size={22}
+              className={scrolled ? "text-primary" : "text-white"}
+            />
+            {totalItems > 0 && (
+              <span className="absolute flex items-center justify-center w-5 h-5 text-xs font-bold text-white rounded-full -top-1 -right-1 bg-accent">
+                {totalItems}
+              </span>
+            )}
+          </button>
         </div>
       </div>
 
@@ -98,12 +105,12 @@ function Navbar() {
         {menuOpen && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
+            animate={{ opacity: 1, height: "auto" }}
             exit={{ opacity: 0, height: 0 }}
             className="bg-white border-t border-gray-100 md:hidden"
           >
             <div className="flex flex-col max-w-6xl gap-4 px-4 py-4 mx-auto">
-              {links.map(link => (
+              {links.map((link) => (
                 <a
                   key={link.label}
                   href={link.href}
@@ -126,8 +133,9 @@ function Navbar() {
           </motion.div>
         )}
       </AnimatePresence>
+    
     </nav>
-  )
+  );
 }
 
 export default Navbar

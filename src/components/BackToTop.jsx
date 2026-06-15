@@ -6,10 +6,8 @@ function BackToTop() {
   const [visible, setVisible] = useState(false)
 
   useEffect(() => {
-    const handleScroll = () => {
-      setVisible(window.scrollY > 400)
-    }
-    window.addEventListener('scroll', handleScroll)
+    const handleScroll = () => setVisible(window.scrollY > 400)
+    window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
@@ -25,7 +23,8 @@ function BackToTop() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 20 }}
           onClick={scrollToTop}
-  className="fixed bottom-8 right-8 bg-primary hover:bg-accent text-white w-12 h-12 rounded-full shadow-lg transition-colors z-50 flex items-center justify-center"
+          aria-label="Back to top"
+          className="fixed bottom-8 right-8 bg-primary hover:bg-accent text-white w-12 h-12 rounded-full shadow-lg transition-colors z-50 flex items-center justify-center"
         >
            <HiArrowUp size={20} />
         </motion.button>

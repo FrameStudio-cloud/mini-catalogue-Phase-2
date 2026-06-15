@@ -16,11 +16,19 @@ function ProtectedRoute({ children }) {
       }
       setLoading(false)
     })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        navigate('/admin')
+      }
+    })
+
+    return () => subscription?.unsubscribe()
   }, [navigate])
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-screen">
-      <p className="text-gray-400">Loading...</p>
+      <div className="w-8 h-8 border-2 border-gray-300 border-t-accent rounded-full animate-spin" />
     </div>
   )
 

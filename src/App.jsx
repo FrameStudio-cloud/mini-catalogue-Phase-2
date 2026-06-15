@@ -1,7 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 import Navbar from './components/Navbar'
 import Hero from './components/Hero'
-import ProductGallery from './components/ProductGallery'
+import Catalogue from './components/Catalogue'
 import About from './components/About'
 import Footer from './components/Footer'
 import BackToTop from './components/BackToTop'
@@ -10,30 +10,25 @@ import AdminLogin from './admin/AdminLogin'
 import AdminDashboard from './admin/AdminDashboard'
 import ProtectedRoute from './admin/ProtectedRoute'
 import CartDrawer from './components/CartDrawer'
-import { ModeToggle } from './components/ModeToggle'
 
 function App() {
   return (
     <Routes>
-      {/* Public website */}
       <Route
         path="/"
         element={
-          <div className="font-sans text-black bg-white ">
+          <div className="font-sans text-black bg-white">
             <Navbar />
             <Hero />
-            <ProductGallery />
+            <Catalogue />
             <About />
             <Footer />
             <BackToTop />
             <WhatsAppFloat />
             <CartDrawer />
-        
           </div>
         }
       />
-
-      {/* Admin routes */}
       <Route path="/admin" element={<AdminLogin />} />
       <Route
         path="/admin/dashboard"
@@ -44,7 +39,7 @@ function App() {
         }
       />
     </Routes>
-  );
+  )
 }
 
 export default App

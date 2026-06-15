@@ -25,6 +25,7 @@ function AdminLogin() {
       return
     }
 
+    setLoading(false)
     navigate('/admin/dashboard')
   }
 

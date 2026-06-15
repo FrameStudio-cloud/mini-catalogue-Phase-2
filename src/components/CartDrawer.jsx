@@ -2,9 +2,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { FiX, FiTrash2, FiPlus, FiMinus, FiShoppingBag } from 'react-icons/fi'
 import { FaWhatsapp } from 'react-icons/fa'
 import { useCart } from '../context/CartContext'
-import shop from '../config/shop'
+import { useShop } from '../context/ShopContext'
 
 function CartDrawer() {
+  const { shop } = useShop()
   const {
     cartItems,
     cartOpen,
@@ -28,7 +29,7 @@ function CartDrawer() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setCartOpen(false)}
-            className="fixed inset-0 z-40 bg-black bg-opacity-50"
+            className="fixed inset-0 z-40 bg-black/50"
           />
 
           {/* Drawer */}
@@ -65,6 +66,7 @@ function CartDrawer() {
                 <button
                   onClick={() => setCartOpen(false)}
                   className="p-2 transition-colors rounded-full hover:bg-gray-100"
+                  aria-label="Close cart"
                 >
                   <FiX size={20} />
                 </button>
@@ -133,6 +135,7 @@ function CartDrawer() {
                             <button
                               onClick={() => decreaseQuantity(item.cartId)}
                               className="flex items-center justify-center w-6 h-6 transition-colors border border-gray-200 rounded-full hover:bg-gray-100"
+                              aria-label="Decrease quantity"
                             >
                               <FiMinus size={12} />
                             </button>
@@ -142,6 +145,7 @@ function CartDrawer() {
                             <button
                               onClick={() => increaseQuantity(item.cartId)}
                               className="flex items-center justify-center w-6 h-6 transition-colors border border-gray-200 rounded-full hover:bg-gray-100"
+                              aria-label="Increase quantity"
                             >
                               <FiPlus size={12} />
                             </button>
@@ -150,6 +154,7 @@ function CartDrawer() {
                           <button
                             onClick={() => removeFromCart(item.cartId)}
                             className="text-gray-300 transition-colors hover:text-red-500"
+                            aria-label="Remove from cart"
                           >
                             <FiTrash2 size={16} />
                           </button>
@@ -185,7 +190,7 @@ function CartDrawer() {
                   </a>
 
                   <p className="text-xs text-center text-gray-400">
-                    Youll be redirected to WhatsApp with your order details
+                    You&apos;ll be redirected to WhatsApp with your order details
                   </p>
                 </div>
               </>

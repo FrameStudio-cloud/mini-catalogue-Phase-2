@@ -1,32 +1,28 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FaWhatsapp } from 'react-icons/fa'
-import shop from '../config/shop'
+import { useShop } from '../context/ShopContext'
 
 function WhatsAppFloat() {
   const [visible, setVisible] = useState(false)
   const [showTooltip, setShowTooltip] = useState(false)
+  const { shop } = useShop()
 
   useEffect(() => {
-    // Show button after scrolling past hero
-    const handleScroll = () => {
-      setVisible(window.scrollY > 300)
-    }
-    window.addEventListener('scroll', handleScroll)
+    const handleScroll = () => setVisible(window.scrollY > 300)
+    window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // Show tooltip after 3 seconds of button being visible
   useEffect(() => {
     if (visible) {
       const timer = setTimeout(() => setShowTooltip(true), 3000)
       const hideTimer = setTimeout(() => setShowTooltip(false), 7000)
-      return () => {
-        clearTimeout(timer)
-        clearTimeout(hideTimer)
-      }
+      return () => { clearTimeout(timer); clearTimeout(hideTimer) }
     }
   }, [visible])
+
+  if (!shop.whatsapp) return null
 
   return (
     <AnimatePresence>
@@ -37,7 +33,6 @@ function WhatsAppFloat() {
           exit={{ opacity: 0, scale: 0 }}
           className="fixed z-50 flex items-center gap-3 bottom-24 right-6"
         >
-          {/* Tooltip */}
           <AnimatePresence>
             {showTooltip && (
               <motion.div
@@ -46,29 +41,25 @@ function WhatsAppFloat() {
                 exit={{ opacity: 0, x: 20 }}
                 className="px-4 py-2 text-sm font-medium bg-white rounded-full shadow-md text-primary whitespace-nowrap"
               >
-                Order on WhatsApp 👋
+                Order on WhatsApp
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Button */}
           <motion.a
             href={`https://wa.me/${shop.whatsapp}?text=${encodeURIComponent('Hi! I saw your catalogue and I would like to place an order.')}`}
             target="_blank"
             rel="noopener noreferrer"
             animate={{ y: [0, -6, 0] }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              repeatType: 'loop'
-            }}
+            transition={{ duration: 2, repeat: Infinity, repeatType: 'loop' }}
             onHoverStart={() => setShowTooltip(true)}
             onHoverEnd={() => setShowTooltip(false)}
-            className="flex items-center justify-center text-white transition-colors bg-green-500 rounded-full shadow-lg hover:bg-green-600 w-14 h-14"
+            className="flex items-center justify-center text-white transition-colors rounded-full shadow-lg w-14 h-14"
+            style={{ backgroundColor: '#25D366' }}
+            aria-label="Chat on WhatsApp"
           >
             <FaWhatsapp size={28} />
           </motion.a>
-
         </motion.div>
       )}
     </AnimatePresence>

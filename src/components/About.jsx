@@ -1,12 +1,12 @@
 import { motion } from 'framer-motion'
-import shop from '../config/shop'
+import { useShop } from '../context/ShopContext'
 
 function About() {
+  const { shop } = useShop()
   return (
     <section id="about" className="py-20 overflow-hidden bg-cream">
       <div className="max-w-6xl px-4 mx-auto">
 
-        {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -18,8 +18,8 @@ function About() {
             Our Story
           </p>
           <h2 className="text-4xl font-bold text-primary">
-            Fashion That Tells
-            <span className="text-gold"> Your Story</span>
+            {shop.name}
+            <span className="text-gold"> {shop.nameAccent}</span>
           </h2>
         </motion.div>
 

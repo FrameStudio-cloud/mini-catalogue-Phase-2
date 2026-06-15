@@ -1,194 +1,169 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
-import { FiLogOut, FiPlus, FiEdit, FiTrash2, FiSearch } from 'react-icons/fi'
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "../lib/supabase";
+import { getShopId, withShop } from "../lib/shop";
+import { FiLogOut, FiPlus } from "react-icons/fi";
+
+const EMPTY_FORM = {
+  type: "product",
+  category: "",
+  name: "",
+  description: "",
+  image: "",
+  price: "",
+  price_label: "",
+  badge: "",
+  available: true,
+  specs: "",
+  includes: "",
+};
 
 function AdminDashboard() {
-  const [products, setProducts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [showAddForm, setShowAddForm] = useState(false)
-  const [editingProduct, setEditingProduct] = useState(null)
-  const [saving, setSaving] = useState(false)
-  const navigate = useNavigate()
-  const [imageFile, setImageFile] = useState(null)
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
+  const [filterCategory, setFilterCategory] = useState("All");
+  const [filterType, setFilterType] = useState("All");
+  const [toast, setToast] = useState(null);
+  const navigate = useNavigate();
 
-  // Empty form state
-  const emptyForm = {
-    name: '',
-    price: '',
-    category: '',
-    image: '',
-    description: '',
-    available: true,
-    badge: '',
-    sizes: '',
-    colors: ''
-  }
-
-  const [form, setForm] = useState(emptyForm)
-
-  async function fetchProducts() {
-    setLoading(true)
+  async function loadItems() {
+    const shopId = await getShopId();
     const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .order('created_at', { ascending: false })
-
-    if (!error) setProducts(data)
-    setLoading(false)
+      .from("catalogue")
+      .select("*")
+      .eq("shop_id", shopId)
+      .order("created_at", { ascending: false });
+    if (!error) setItems(data);
+    setLoading(false);
   }
 
   useEffect(() => {
-    fetchProducts()
-  }, [])
+    getShopId().then(shopId => {
+      supabase.from("catalogue").select("*").eq("shop_id", shopId).order("created_at", { ascending: false }).then(({ data, error }) => {
+        if (!error) setItems(data);
+        setLoading(false);
+      });
+    });
+  }, []);
 
-  // Toggle available/unavailable
-  async function toggleAvailable(product) {
-    const { error } = await supabase
-      .from('products')
-      .update({ available: !product.available })
-      .eq('id', product.id)
-
-    if (!error) {
-      setProducts(products.map(p =>
-        p.id === product.id
-          ? { ...p, available: !p.available }
-          : p
-      ))
-    }
+  function showToast(msg, type = "success") {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3000);
   }
 
-  // Delete product
-  async function deleteProduct(id) {
-    if (!window.confirm('Are you sure you want to delete this product?')) return
-
-    const { error } = await supabase
-      .from('products')
-      .delete()
-      .eq('id', id)
-
-    if (!error) {
-      setProducts(products.filter(p => p.id !== id))
-    }
+  function openAdd() {
+    setForm(EMPTY_FORM);
+    setEditItem(null);
+    setShowForm(true);
   }
 
-  // Save product (add or edit)
-async function saveProduct() {
-  setSaving(true);
+  function openEdit(item) {
+    setForm({
+      ...item,
+      specs: Array.isArray(item.specs) ? item.specs.join("\n") : "",
+      includes: Array.isArray(item.includes) ? item.includes.join("\n") : "",
+    });
+    setEditItem(item);
+    setShowForm(true);
+  }
 
-  let imageUrl = form.image;
-
-  try {
-    // 🔥 Upload image ONLY if a new one is selected
-    if (imageFile) {
-      const formData = new FormData();
-      formData.append("image", imageFile);
-
-      const res = await fetch(
-        "https://api.imgbb.com/1/upload?key=949b03f2004008aa92d1b37cbfe75124",
-        {
-          method: "POST",
-          body: formData,
-        },
-      );
-
-      const data = await res.json();
-      imageUrl = data.data.url;
+  async function handleSave() {
+    if (!form.name || !form.category || !form.type) {
+      showToast("Name, category and type are required", "error");
+      return;
     }
+    setSaving(true);
 
-    const productData = {
+    const payload = {
       ...form,
-      image: imageUrl,
-      price: parseInt(form.price),
+      price: parseInt(form.price) || 0,
+      specs:
+        form.type === "product" && form.specs
+          ? form.specs.split("\n").map((s) => s.trim()).filter(Boolean)
+          : null,
+      includes:
+        form.type === "service"
+          ? form.includes.split("\n").map((s) => s.trim()).filter(Boolean)
+          : null,
+      badge: form.badge || null,
     };
 
-    if (editingProduct) {
-      const { error } = await supabase
-        .from("products")
-        .update(productData)
-        .eq("id", editingProduct.id);
-
-      if (!error) {
-        setProducts(
-          products.map((p) =>
-            p.id === editingProduct.id ? { ...p, ...productData } : p,
-          ),
-        );
-      }
+    let error;
+    if (editItem) {
+      ({ error } = await supabase
+        .from("catalogue")
+        .update(payload)
+        .eq("id", editItem.id)
+        .eq("shop_id", await getShopId()));
     } else {
-      const { data, error } = await supabase
-        .from("products")
-        .insert([productData])
-        .select();
-
-      if (!error) setProducts([data[0], ...products]);
+      ({ error } = await supabase.from("catalogue").insert([withShop(payload)]));
     }
-  } catch (err) {
-    console.error(err);
-    alert("Image upload failed");
+
+    setSaving(false);
+    if (error) { showToast("Something went wrong", "error"); return; }
+    showToast(editItem ? "Item updated!" : "Item added!");
+    setShowForm(false);
+    loadItems();
   }
 
-  setSaving(false);
-  setShowAddForm(false);
-  setEditingProduct(null);
-  setForm(emptyForm);
-  setImageFile(null);
-}
-
-  // Start editing
-  function startEdit(product) {
-    setEditingProduct(product)
-    setForm({
-      name: product.name,
-      price: product.price,
-      category: product.category,
-      image: product.image,
-      description: product.description || '',
-      available: product.available,
-      badge: product.badge || '',
-      sizes: product.sizes || '',
-      colors: product.colors || ''
-    })
-    setShowAddForm(true)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+  async function handleDelete(id) {
+    if (!window.confirm("Delete this item?")) return;
+    const { error } = await supabase.from("catalogue").delete().eq("id", id).eq("shop_id", await getShopId());
+    if (error) { showToast("Delete failed", "error"); return; }
+    showToast("Item deleted");
+    loadItems();
   }
 
-  // Logout
+  async function toggleAvailable(item) {
+    await supabase
+      .from("catalogue")
+      .update({ available: !item.available })
+      .eq("id", item.id)
+      .eq("shop_id", await getShopId());
+    loadItems();
+  }
+
   async function handleLogout() {
-    await supabase.auth.signOut()
-    navigate('/admin')
+    await supabase.auth.signOut();
+    navigate("/admin");
   }
 
-  // Stats
-  const total = products.length
-  const available = products.filter(p => p.available).length
-  const soldOut = products.filter(p => !p.available).length
-  const categories = [...new Set(products.map(p => p.category))].length
+  const total = items.length;
+  const productsCount = items.filter((i) => i.type === "product").length;
+  const servicesCount = items.filter((i) => i.type === "service").length;
+  const unavailable = items.filter((i) => !i.available).length;
+  const categories = ["All", ...new Set(items.map((i) => i.category))];
 
-  // Search filter
-  const filteredProducts = products.filter(p =>
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.category.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  const filtered = items.filter((i) => {
+    const matchType = filterType === "All" || i.type === filterType.toLowerCase();
+    const matchCat = filterCategory === "All" || i.category === filterCategory;
+    return matchType && matchCat;
+  });
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      {toast && (
+        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-xl text-sm font-semibold shadow-xl ${
+          toast.type === "error" ? "bg-red-500 text-white" : "bg-accent text-white"
+        }`}>
+          {toast.msg}
+        </div>
+      )}
+
       <div className="sticky top-0 z-10 bg-white border-b border-gray-100">
         <div className="flex items-center justify-between max-w-6xl px-4 py-4 mx-auto">
           <div>
             <h1 className="text-xl font-bold text-primary">
               Admin <span className="text-accent">Dashboard</span>
             </h1>
-            <p className="text-xs text-gray-400">Manage your catalogue</p>
+            <p className="text-xs text-gray-400">{items.length} items in catalogue</p>
           </div>
           <div className="flex items-center gap-3">
-            <a
-              href="/"
-              target="_blank"
-              className="text-sm text-gray-500 transition-colors hover:text-primary"
-            >
+            <a href="/" target="_blank" className="text-sm text-gray-500 transition-colors hover:text-primary">
               View Site →
             </a>
             <button
@@ -203,304 +178,305 @@ async function saveProduct() {
       </div>
 
       <div className="max-w-6xl px-4 py-8 mx-auto">
-        {/* Stats */}
         <div className="grid grid-cols-2 gap-4 mb-8 md:grid-cols-4">
           {[
-            { label: "Total Products", value: total, color: "text-primary" },
-            { label: "Available", value: available, color: "text-green-500" },
-            { label: "Sold Out", value: soldOut, color: "text-red-500" },
-            { label: "Categories", value: categories, color: "text-accent" },
-          ].map((stat, i) => (
-            <div
-              key={i}
-              className="p-4 bg-white border border-gray-100 rounded-xl"
-            >
+            { label: "Total Items", value: total, color: "text-primary" },
+            { label: "Products", value: productsCount, color: "text-green-500" },
+            { label: "Services", value: servicesCount, color: "text-blue-500" },
+            { label: "Unavailable", value: unavailable, color: "text-red-500" },
+          ].map((stat) => (
+            <div key={stat.label} className="p-4 bg-white border border-gray-100 rounded-xl">
               <p className="mb-1 text-xs text-gray-400">{stat.label}</p>
               <p className={`text-3xl font-bold ${stat.color}`}>{stat.value}</p>
             </div>
           ))}
         </div>
 
-        {/* Add/Edit Form */}
-        {showAddForm && (
-          <div className="p-6 mb-8 bg-white border border-gray-100 rounded-xl">
-            <h2 className="mb-6 text-lg font-semibold text-primary">
-              {editingProduct ? "Edit Product" : "Add New Product"}
-            </h2>
-
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div>
-                <label className="block mb-1 text-xs text-gray-500">
-                  Product Name *
-                </label>
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="Floral Summer Dress"
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-accent"
-                />
-              </div>
-
-              <div>
-                <label className="block mb-1 text-xs text-gray-500">
-                  Price (Ksh) *
-                </label>
-                <input
-                  type="number"
-                  value={form.price}
-                  onChange={(e) => setForm({ ...form, price: e.target.value })}
-                  placeholder="2500"
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-accent"
-                />
-              </div>
-
-              <div>
-                <label className="block mb-1 text-xs text-gray-500">
-                  Category *
-                </label>
-                <input
-                  type="text"
-                  value={form.category}
-                  onChange={(e) =>
-                    setForm({ ...form, category: e.target.value })
-                  }
-                  placeholder="Dresses"
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-accent"
-                />
-              </div>
-
-              <div>
-                <label className="block mb-1 text-xs text-gray-500">
-                  Badge
-                </label>
-                <select
-                  value={form.badge}
-                  onChange={(e) => setForm({ ...form, badge: e.target.value })}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-accent"
-                >
-                  <option value="">No Badge</option>
-                  <option value="New">New</option>
-                  <option value="Best Seller">Best Seller</option>
-                  <option value="On Sale">On Sale</option>
-                  <option value="Limited">Limited</option>
-                </select>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block mb-1 text-xs text-gray-500">
-                  Product Image *
-                </label>
-
-                <input
-                  type="file"
-                  onChange={(e) => setImageFile(e.target.files[0])}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg"
-                />
-
-                {/* Preview */}
-                {form.image && (
-                  <img
-                    src={form.image}
-                    alt="preview"
-                    className="object-cover w-20 h-20 mt-2 rounded"
-                  />
-                )}
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block mb-1 text-xs text-gray-500">
-                  Description
-                </label>
-                <input
-                  type="text"
-                  value={form.description}
-                  onChange={(e) =>
-                    setForm({ ...form, description: e.target.value })
-                  }
-                  placeholder="Beautiful floral dress perfect for summer"
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-accent"
-                />
-              </div>
-
-              <div>
-                <label className="block mb-1 text-xs text-gray-500">
-                  Sizes (comma separated)
-                </label>
-                <input
-                  type="text"
-                  value={form.sizes}
-                  onChange={(e) => setForm({ ...form, sizes: e.target.value })}
-                  placeholder="S,M,L,XL"
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-accent"
-                />
-              </div>
-
-              <div>
-                <label className="block mb-1 text-xs text-gray-500">
-                  Colors (comma separated)
-                </label>
-                <input
-                  type="text"
-                  value={form.colors}
-                  onChange={(e) => setForm({ ...form, colors: e.target.value })}
-                  placeholder="Pink,White,Yellow"
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-accent"
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  id="available"
-                  checked={form.available}
-                  onChange={(e) =>
-                    setForm({ ...form, available: e.target.checked })
-                  }
-                  className="w-4 h-4"
-                />
-                <label htmlFor="available" className="text-sm text-gray-600">
-                  Available for purchase
-                </label>
-              </div>
-            </div>
-
-            {/* Form Buttons */}
-            <div className="flex gap-3 mt-6">
-              <button
-                onClick={saveProduct}
-                disabled={
-                  saving ||
-                  !form.name ||
-                  !form.price ||
-                  !form.category ||
-                  (!imageFile && !editingProduct)
-                }
-                className="px-6 py-2 text-sm font-medium text-white transition-colors rounded-lg bg-primary hover:bg-accent disabled:opacity-50"
-              >
-                {saving
-                  ? "Saving..."
-                  : editingProduct
-                    ? "Update Product"
-                    : "Add Product"}
-              </button>
-              <button
-                onClick={() => {
-                  setShowAddForm(false);
-                  setEditingProduct(null);
-                  setForm(emptyForm);
-                }}
-                className="px-6 py-2 text-sm font-medium text-gray-600 transition-colors border border-gray-200 rounded-lg hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Products Table */}
-        <div className="bg-white border border-gray-100 rounded-xl">
-          {/* Table Header */}
-          <div className="flex items-center justify-between gap-4 p-4 border-b border-gray-100">
-            <div className="relative flex-1 max-w-xs">
-              <FiSearch
-                size={16}
-                className="absolute text-gray-400 -translate-y-1/2 left-3 top-1/2"
-              />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search products..."
-                className="w-full py-2 pr-3 text-sm border border-gray-200 rounded-lg outline-none pl-9 focus:border-accent"
-              />
-            </div>
+        <div className="flex flex-wrap gap-3 mb-6">
+          {["All", "product", "service"].map((t) => (
             <button
-              onClick={() => {
-                setShowAddForm(true);
-                setEditingProduct(null);
-                setForm(emptyForm);
-              }}
+              key={t}
+              onClick={() => setFilterType(t === "All" ? "All" : t.charAt(0).toUpperCase() + t.slice(1))}
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all border ${
+                filterType === (t === "All" ? "All" : t.charAt(0).toUpperCase() + t.slice(1))
+                  ? "bg-primary text-white border-primary"
+                  : "bg-white text-gray-500 border-gray-200"
+              }`}
+            >
+              {t === "All" ? "All Types" : t.charAt(0).toUpperCase() + t.slice(1) + "s"}
+            </button>
+          ))}
+          <span className="text-gray-200">|</span>
+          {categories.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setFilterCategory(cat)}
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all border ${
+                filterCategory === cat
+                  ? "bg-primary text-white border-primary"
+                  : "bg-white text-gray-500 border-gray-200"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
+        </div>
+
+        <div className="bg-white border border-gray-100 rounded-xl">
+          <div className="flex items-center justify-between gap-4 p-4 border-b border-gray-100">
+            <p className="text-sm text-gray-400">
+              {filtered.length} {filtered.length === 1 ? "item" : "items"}
+            </p>
+            <button
+              onClick={openAdd}
               className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white transition-colors rounded-lg bg-primary hover:bg-accent"
             >
               <FiPlus size={16} />
-              Add Product
+              Add Item
             </button>
           </div>
 
-          {/* Loading */}
-          {loading && (
-            <div className="p-8 text-center text-gray-400">
-              Loading products...
+          {loading ? (
+            <div className="space-y-3 p-4">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-16 bg-gray-100 rounded-xl animate-pulse" />
+              ))}
             </div>
-          )}
-
-          {/* Products List */}
-          {!loading &&
-            filteredProducts.map((product) => (
-              <div
-                key={product.id}
-                className="flex items-center gap-4 p-4 transition-colors border-b border-gray-50 hover:bg-gray-50"
-              >
-                {/* Image */}
-                <img
-                  src={product.image}
-                  alt={product.name}
-                  className="flex-shrink-0 object-cover w-12 h-12 rounded-lg"
-                />
-
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate text-primary">
-                    {product.name}
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    {product.category} • Ksh {product.price.toLocaleString()}
-                    {product.badge && ` • ${product.badge}`}
-                  </p>
-                </div>
-
-                {/* Available Toggle */}
-                <button
-                  onClick={() => toggleAvailable(product)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors flex-shrink-0
-                  ${
-                    product.available
-                      ? "bg-green-100 text-green-700 hover:bg-green-200"
-                      : "bg-red-100 text-red-700 hover:bg-red-200"
-                  }`}
-                >
-                  {product.available ? "✅ Available" : "❌ Sold Out"}
-                </button>
-
-                {/* Actions */}
-                <div className="flex items-center flex-shrink-0 gap-2">
+          ) : (
+            <>
+              {filtered.map((item, i) => (
+                <div key={item.id} className={`flex items-center gap-4 p-4 transition-colors hover:bg-gray-50 ${
+                  i < filtered.length - 1 ? "border-b border-gray-50" : ""
+                }`}>
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    className="flex-shrink-0 object-cover w-12 h-12 rounded-lg"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate text-primary">{item.name}</p>
+                    <p className="text-xs text-gray-400">
+                      {item.category}
+                      {item.type && <> • <span className={item.type === "service" ? "text-blue-500" : "text-green-500"}>{item.type}</span></>}
+                      {item.badge && <> • {item.badge}</>}
+                    </p>
+                  </div>
+                  <span className="text-sm font-bold text-accent flex-shrink-0">
+                    {item.price_label || `Ksh ${item.price?.toLocaleString()}`}
+                  </span>
                   <button
-                    onClick={() => startEdit(product)}
-                    className="p-2 text-gray-400 transition-colors hover:text-primary"
+                    onClick={() => toggleAvailable(item)}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors flex-shrink-0 ${
+                      item.available
+                        ? "bg-green-100 text-green-700 hover:bg-green-200"
+                        : "bg-red-100 text-red-700 hover:bg-red-200"
+                    }`}
                   >
-                    <FiEdit size={16} />
+                    {item.available ? "Available" : "Hidden"}
                   </button>
-                  <button
-                    onClick={() => deleteProduct(product.id)}
-                    className="p-2 text-gray-400 transition-colors hover:text-red-500"
-                  >
-                    <FiTrash2 size={16} />
-                  </button>
+                  <div className="flex items-center flex-shrink-0 gap-2">
+                    <button
+                      onClick={() => openEdit(item)}
+                      className="px-2 py-1 text-xs text-gray-400 transition-colors rounded-lg hover:text-primary hover:bg-gray-100"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(item.id)}
+                      className="px-2 py-1 text-xs text-red-400 transition-colors rounded-lg hover:text-red-500 hover:bg-red-50"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
-
-          {/* Empty */}
-          {!loading && filteredProducts.length === 0 && (
-            <div className="p-8 text-center text-gray-400">
-              No products found
-            </div>
+              ))}
+              {filtered.length === 0 && (
+                <div className="py-16 text-center text-gray-400">
+                  <p className="mb-3 text-3xl">📭</p>
+                  <p className="text-sm">No items found</p>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
+
+      {showForm && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={() => setShowForm(false)} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                <h2 className="text-lg font-semibold text-primary">
+                  {editItem ? "Edit Item" : "Add New Item"}
+                </h2>
+                <button onClick={() => setShowForm(false)} className="text-gray-400 hover:text-primary" aria-label="Close form">✕</button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block mb-1 text-xs text-gray-500">Type *</label>
+                    <select
+                      value={form.type}
+                      onChange={(e) => setForm({ ...form, type: e.target.value })}
+                      className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-accent"
+                    >
+                      <option value="product">Product</option>
+                      <option value="service">Service</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block mb-1 text-xs text-gray-500">Category *</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Dresses"
+                      value={form.category}
+                      onChange={(e) => setForm({ ...form, category: e.target.value })}
+                      className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-accent"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block mb-1 text-xs text-gray-500">Name *</label>
+                  <input
+                    type="text"
+                    placeholder="Product or service name"
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-accent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block mb-1 text-xs text-gray-500">Description</label>
+                  <textarea
+                    rows={3}
+                    placeholder="Describe the item..."
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-accent resize-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block mb-1 text-xs text-gray-500">Image URL</label>
+                  <input
+                    type="text"
+                    placeholder="https://..."
+                    value={form.image}
+                    onChange={(e) => setForm({ ...form, image: e.target.value })}
+                    className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-accent"
+                  />
+                  {form.image && (
+                    <img src={form.image} alt="preview" className="object-cover w-full h-24 mt-2 rounded-lg" />
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block mb-1 text-xs text-gray-500">Price (Ksh)</label>
+                    <input
+                      type="number"
+                      placeholder="2500"
+                      value={form.price}
+                      onChange={(e) => setForm({ ...form, price: e.target.value })}
+                      className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-accent"
+                    />
+                  </div>
+                  <div>
+                    <label className="block mb-1 text-xs text-gray-500">Price Label</label>
+                    <input
+                      type="text"
+                      placeholder="From Ksh 2,500"
+                      value={form.price_label}
+                      onChange={(e) => setForm({ ...form, price_label: e.target.value })}
+                      className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-accent"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block mb-1 text-xs text-gray-500">Badge</label>
+                    <select
+                      value={form.badge}
+                      onChange={(e) => setForm({ ...form, badge: e.target.value })}
+                      className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-accent"
+                    >
+                      <option value="">No Badge</option>
+                      <option value="New">New</option>
+                      <option value="Best Seller">Best Seller</option>
+                      <option value="On Sale">On Sale</option>
+                      <option value="Limited">Limited</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block mb-1 text-xs text-gray-500">Status</label>
+                    <select
+                      value={form.available}
+                      onChange={(e) => setForm({ ...form, available: e.target.value === "true" })}
+                      className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-accent"
+                    >
+                      <option value="true">Available</option>
+                      <option value="false">Hidden</option>
+                    </select>
+                  </div>
+                </div>
+
+                {form.type === "product" && (
+                  <div>
+                    <label className="block mb-1 text-xs text-gray-500">
+                      Specs <span className="text-gray-400">(one per line)</span>
+                    </label>
+                    <textarea
+                      rows={4}
+                      placeholder="Feature 1&#10;Feature 2&#10;Feature 3"
+                      value={form.specs}
+                      onChange={(e) => setForm({ ...form, specs: e.target.value })}
+                      className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-accent resize-none font-mono"
+                    />
+                  </div>
+                )}
+
+                {form.type === "service" && (
+                  <div>
+                    <label className="block mb-1 text-xs text-gray-500">
+                      What&apos;s Included <span className="text-gray-400">(one per line)</span>
+                    </label>
+                    <textarea
+                      rows={4}
+                      placeholder="Included item 1&#10;Included item 2"
+                      value={form.includes}
+                      onChange={(e) => setForm({ ...form, includes: e.target.value })}
+                      className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg outline-none focus:border-accent resize-none font-mono"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-3 px-6 py-4 border-t border-gray-100">
+                <button
+                  onClick={() => setShowForm(false)}
+                  className="flex-1 py-2.5 border border-gray-200 text-gray-500 hover:text-primary rounded-lg text-sm font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="flex-1 py-2.5 bg-primary hover:bg-accent text-white font-medium rounded-lg text-sm transition-all disabled:opacity-50"
+                >
+                  {saving ? "Saving..." : editItem ? "Save Changes" : "Add Item"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
-export default AdminDashboard
+export default AdminDashboard;

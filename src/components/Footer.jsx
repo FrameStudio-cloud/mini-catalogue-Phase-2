@@ -1,11 +1,11 @@
 import { FaWhatsapp, FaInstagram, FaFacebook, FaTiktok } from 'react-icons/fa'
 import { MdLocationOn, MdAccessTime, MdEmail, MdPhone } from 'react-icons/md'
-import shop from '../config/shop'
+import { useShop } from '../context/ShopContext'
 import { Link } from 'react-router-dom'
 
 function Footer() {
+  const { shop } = useShop()
   const currentYear = new Date().getFullYear()
-  
 
   const socials = [
     { icon: <FaInstagram size={18} />, href: shop.instagram },
@@ -21,27 +21,24 @@ function Footer() {
     { icon: <MdEmail size={18} className="text-accent mt-0.5 flex-shrink-0" />, content: <a href={`mailto:${shop.email}`} className="transition-colors hover:text-accent">{shop.email}</a> },
   ]
 
-
-    const links = [
-  { label: 'Home', href: '#home', internal: false },
-  { label: 'Catalogue', href: '#catalogue', internal: false },
-  { label: 'About Us', href: '#about', internal: false },
-  { label: 'Contact', href: '#contact', internal: false },
-  { label: 'Admin', href: '/admin', internal: true }  // ← fixed
-]
+  const links = [
+    { label: 'Home', href: '#home', internal: false },
+    { label: 'Catalogue', href: '#catalogue', internal: false },
+    { label: 'About Us', href: '#about', internal: false },
+    { label: 'Contact', href: '#contact', internal: false },
+    { label: 'Admin', href: '/admin', internal: true }
+  ]
   
 
   return (
-    <footer id="contact" className="text-white bg-primary">
+    <footer id="contact" className="text-white" style={{ backgroundColor: 'var(--primary)' }}>
       <div className="max-w-6xl px-4 py-16 mx-auto">
         <div className="grid grid-cols-1 gap-12 md:grid-cols-3">
           {/* Brand */}
           <div>
             <div className="flex items-center gap-2 mb-4">
               <span className="text-2xl font-bold">{shop.name}</span>
-              <span className="text-2xl font-light text-accent">
-                {shop.nameAccent}
-              </span>
+              {shop.nameAccent && <span className="text-2xl font-light" style={{ color: 'var(--accent)' }}>{shop.nameAccent}</span>}
             </div>
             <p className="mb-6 leading-relaxed text-gray-400">
               {shop.description}
@@ -68,19 +65,9 @@ function Footer() {
               {links.map((link, index) => (
                 <li key={index}>
                   {link.internal ? (
-                    <Link
-                      to={link.href}
-                      className="text-gray-400 transition-colors hover:text-accent"
-                    >
-                      {link.label}
-                    </Link>
+                    <Link to={link.href} className="text-gray-400 transition-colors hover:text-accent">{link.label}</Link>
                   ) : (
-                    <a
-                      href={link.href}
-                      className="text-gray-400 transition-colors hover:text-accent"
-                    >
-                      {link.label}
-                    </a>
+                    <a href={link.href} className="text-gray-400 transition-colors hover:text-accent">{link.label}</a>
                   )}
                 </li>
               ))}
@@ -105,7 +92,7 @@ function Footer() {
               href={`https://wa.me/${shop.whatsapp}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-6 py-3 mt-6 font-medium text-white transition-colors bg-green-500 rounded-full hover:bg-green-600"
+                className="inline-flex items-center gap-2 px-6 py-3 mt-6 font-medium text-white transition-colors rounded-full" style={{ backgroundColor: '#25D366' }}
             >
               <FaWhatsapp size={18} />
               Chat on WhatsApp
@@ -115,10 +102,10 @@ function Footer() {
       </div>
 
       {/* Bottom Bar */}
-      <div className="border-t border-white border-opacity-10">
+      <div className="border-t border-white/10">
         <div className="flex flex-col items-center justify-between max-w-6xl gap-4 px-4 py-6 mx-auto sm:flex-row">
           <p className="text-sm text-gray-400">
-            © {currentYear} {shop.name} {shop.nameAccent}. All rights reserved.
+            © {currentYear} {shop.name}{shop.nameAccent && ` ${shop.nameAccent}`}. All rights reserved.
           </p>
           <p className="text-sm text-gray-400">
             Website by

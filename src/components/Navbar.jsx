@@ -2,19 +2,19 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FiMenu, FiX } from 'react-icons/fi'
 import { FaWhatsapp } from 'react-icons/fa'
-import shop from '../config/shop'
-import { useCart } from '../context/CartContext'
 import { FiShoppingBag } from 'react-icons/fi'
-import { ModeToggle } from './ModeToggle'
+import { useCart } from '../context/CartContext'
+import { useShop } from '../context/ShopContext'
 
 function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const { totalItems, setCartOpen } = useCart()
+  const { shop } = useShop()
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50)
-    window.addEventListener('scroll', handleScroll)
+    window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
@@ -31,40 +31,38 @@ function Navbar() {
       ${scrolled ? "bg-white shadow-md py-3" : "bg-transparent py-5"}`}
     >
       <div className="flex items-center justify-between max-w-6xl px-4 mx-auto">
-        {/* Logo */}
         <a href="#home" className="flex items-center gap-1">
           <span
-            className={`text-2xl font-bold transition-colors
-            ${scrolled ? "text-primary" : "text-white"}`}
+            className={`text-2xl font-bold transition-colors ${scrolled ? "text-primary" : "text-white"}`}
+            style={scrolled ? {} : { color: 'white' }}
           >
             {shop.name}
           </span>
-          <span className="text-2xl font-light text-accent">
+          <span className="text-2xl font-light" style={{ color: 'var(--accent)' }}>
             {shop.nameAccent}
           </span>
         </a>
 
-        {/* Desktop Links */}
         <div className="items-center hidden gap-8 md:flex">
           {links.map((link) => (
             <a
               key={link.label}
               href={link.href}
-              className={`text-sm font-medium transition-colors hover:text-accent
-                ${scrolled ? "text-gray-600" : "text-white"}`}
+              className={`text-sm font-medium transition-colors hover:text-accent ${scrolled ? 'text-gray-600' : 'text-white'}`}
+              style={scrolled ? {} : { color: 'white' }}
             >
               {link.label}
             </a>
           ))}
         </div>
 
-        {/* Right side */}
         <div className="flex items-center gap-4">
           <a
             href={`https://wa.me/${shop.whatsapp}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="items-center hidden gap-2 px-4 py-2 text-sm font-medium text-white transition-colors bg-green-500 rounded-full md:flex hover:bg-green-600"
+            className="items-center hidden gap-2 px-4 py-2 text-sm font-medium text-white transition-colors rounded-full md:flex"
+            style={{ backgroundColor: '#25D366' }}
           >
             <FaWhatsapp size={16} />
             Order on WhatsApp
@@ -73,26 +71,18 @@ function Navbar() {
           <button
             onClick={() => setMenuOpen(!menuOpen)}
             className="p-2 md:hidden"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
           >
             {menuOpen ? (
-              <FiX
-                size={24}
-                className={scrolled ? "text-primary" : "text-white"}
-              />
+              <FiX size={24} className={scrolled ? "text-primary" : "text-white"} />
             ) : (
-              <FiMenu
-                size={24}
-                className={scrolled ? "text-primary" : "text-white"}
-              />
+              <FiMenu size={24} className={scrolled ? "text-primary" : "text-white"} />
             )}
           </button>
-          <button onClick={() => setCartOpen(true)} className="relative p-2">
-            <FiShoppingBag
-              size={22}
-              className={scrolled ? "text-primary" : "text-white"}
-            />
+          <button onClick={() => setCartOpen(true)} className="relative p-2" aria-label="Open cart">
+            <FiShoppingBag size={22} className={scrolled ? "text-primary" : "text-white"} />
             {totalItems > 0 && (
-              <span className="absolute flex items-center justify-center w-5 h-5 text-xs font-bold text-white rounded-full -top-1 -right-1 bg-accent">
+              <span className="absolute flex items-center justify-center w-5 h-5 text-xs font-bold text-white rounded-full -top-1 -right-1" style={{ backgroundColor: 'var(--accent)' }}>
                 {totalItems}
               </span>
             )}
@@ -100,7 +90,6 @@ function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Menu */}
       <AnimatePresence>
         {menuOpen && (
           <motion.div
@@ -124,7 +113,8 @@ function Navbar() {
                 href={`https://wa.me/${shop.whatsapp}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-white bg-green-500 rounded-full"
+                className="flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-white rounded-full"
+                style={{ backgroundColor: '#25D366' }}
               >
                 <FaWhatsapp size={16} />
                 Order on WhatsApp
@@ -133,9 +123,8 @@ function Navbar() {
           </motion.div>
         )}
       </AnimatePresence>
-    
     </nav>
-  );
+  )
 }
 
 export default Navbar

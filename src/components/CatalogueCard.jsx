@@ -13,11 +13,16 @@ function CatalogueCard({ item, onClick }) {
   const sizes = item.sizes || item.variants?.sizes
   const colors = item.colors || item.variants?.colors
 
+  const now = new Date()
+  const isOnSale = item.sale_price != null && (!item.sale_ends_at || new Date(item.sale_ends_at) > now)
+  const effectivePrice = isOnSale ? item.sale_price : item.price
+  const isBadgeExpired = item.badge_ends_at && new Date(item.badge_ends_at) < now
+
   function handleAddToCart(e) {
     e.stopPropagation()
     if (sizes && !selectedSize) { setError('Select a size'); setTimeout(() => setError(''), 3000); return }
     if (colors && !selectedColor) { setError('Select a color'); setTimeout(() => setError(''), 3000); return }
-    addToCart(item, selectedSize, selectedColor)
+    addToCart({ ...item, price: effectivePrice }, selectedSize, selectedColor)
     setAdded(true)
     setTimeout(() => setAdded(false), 2000)
     setCartOpen(true)
@@ -43,7 +48,10 @@ function CatalogueCard({ item, onClick }) {
           <span className="bg-primary text-white text-xs px-2 py-0.5 rounded-full">
             {item.category}
           </span>
-          {item.badge && <Badge badge={item.badge} />}
+          <div className="flex gap-1">
+            {item.new_arrival && <Badge variant="new_arrival" />}
+            {item.badge && !isBadgeExpired && <Badge badge={item.badge} />}
+          </div>
         </div>
         {item.type && (
           <div className="absolute bottom-2 left-2">
@@ -128,9 +136,22 @@ function CatalogueCard({ item, onClick }) {
         {error && <p className="mb-2 text-xs text-red-500">{error}</p>}
 
         <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-          <span className="text-sm font-bold text-accent">
-            {item.priceLabel || `Ksh ${item.price?.toLocaleString()}`}
-          </span>
+          <div className="flex flex-col">
+            {isOnSale ? (
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-xs text-gray-400 line-through">
+                  {item.priceLabel ? item.priceLabel.replace(/[\d,]+/, item.price?.toLocaleString()) : `Ksh ${item.price?.toLocaleString()}`}
+                </span>
+                <span className="text-sm font-bold text-red-500">
+                  {item.priceLabel ? item.priceLabel.replace(/[\d,]+/, item.sale_price?.toLocaleString()) : `Ksh ${item.sale_price?.toLocaleString()}`}
+                </span>
+              </div>
+            ) : (
+              <span className="text-sm font-bold text-accent">
+                {item.priceLabel || `Ksh ${item.price?.toLocaleString()}`}
+              </span>
+            )}
+          </div>
           {item.type !== "service" && sizes ? (
             <button
               onClick={handleAddToCart}

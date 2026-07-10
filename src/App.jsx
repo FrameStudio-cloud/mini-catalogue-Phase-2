@@ -10,6 +10,7 @@ import AdminLogin from './admin/AdminLogin'
 import AdminDashboard from './admin/AdminDashboard'
 import ProtectedRoute from './admin/ProtectedRoute'
 import CartDrawer from './components/CartDrawer'
+import PublicProduct from './pages/PublicProduct'
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
           </div>
         }
       />
+      <Route path="/p/:id" element={<PublicProduct />} />
       <Route path="/admin" element={<AdminLogin />} />
       <Route
         path="/admin/dashboard"

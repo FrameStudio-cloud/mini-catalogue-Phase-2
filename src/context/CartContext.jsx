@@ -79,7 +79,7 @@ export function CartProvider({ children }) {
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0)
 
   const totalPrice = cartItems.reduce(
-    (sum, item) => sum + (Number(item.price) || 0) * item.quantity, 0
+    (sum, item) => sum + (Number(item.sale_price ?? item.price) || 0) * item.quantity, 0
   )
 
   function buildCartWhatsAppMessage(shopWhatsapp) {
@@ -89,7 +89,7 @@ export function CartProvider({ children }) {
       message += `   Size: ${item.selectedSize}\n`
       message += `   Color: ${item.selectedColor}\n`
       message += `   Qty: ${item.quantity}\n`
-      message += `   Price: Ksh ${((Number(item.price) || 0) * item.quantity).toLocaleString()}\n\n`
+      message += `   Price: Ksh ${((Number(item.sale_price ?? item.price) || 0) * item.quantity).toLocaleString()}\n\n`
     })
     message += `─────────────────\n`
     message += `*Total: Ksh ${totalPrice.toLocaleString()}*\n\n`

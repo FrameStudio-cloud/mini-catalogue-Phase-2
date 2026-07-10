@@ -35,12 +35,21 @@ export function CatalogueModal({ item, onClose }) {
   const colors = item.colors || item.variants?.colors;
   const needsVariants = sizes || colors;
 
-  const whatsappUrl = `https://wa.me/${shop.whatsapp}?text=Hi%2C%20I%20am%20interested%20in%20*${encodeURIComponent(item.name)}*%20(${encodeURIComponent(item.priceLabel || `Ksh ${item.price?.toLocaleString()}`)}).%20Please%20advise.`;
+  const now = new Date();
+  const isOnSale = item.sale_price != null && (!item.sale_ends_at || new Date(item.sale_ends_at) > now);
+  const effectivePrice = isOnSale ? item.sale_price : item.price;
+  const isBadgeExpired = item.badge_ends_at && new Date(item.badge_ends_at) < now;
+
+  const priceDisplay = isOnSale
+    ? `Ksh ${item.sale_price?.toLocaleString()}`
+    : (item.priceLabel || `Ksh ${item.price?.toLocaleString()}`);
+
+  const whatsappUrl = `https://wa.me/${shop.whatsapp}?text=Hi%2C%20I%20am%20interested%20in%20*${encodeURIComponent(item.name)}*%20(${encodeURIComponent(priceDisplay)}).%20Please%20advise.`;
 
   function handleAddToCart() {
     if (sizes && !selectedSize) { setError('Select a size'); return }
     if (colors && !selectedColor) { setError('Select a color'); return }
-    addToCart(item, selectedSize, selectedColor);
+    addToCart({ ...item, price: effectivePrice }, selectedSize, selectedColor);
     setCartOpen(true);
     onClose();
   }
@@ -92,7 +101,10 @@ export function CatalogueModal({ item, onClose }) {
                       </span>
                     )}
                   </div>
-                  {item.badge && <Badge badge={item.badge} />}
+                  <div className="flex gap-1">
+                    {item.new_arrival && <Badge variant="new_arrival" />}
+                    {item.badge && !isBadgeExpired && <Badge badge={item.badge} />}
+                  </div>
                 </div>
                 <button
                   onClick={onClose}
@@ -108,9 +120,18 @@ export function CatalogueModal({ item, onClose }) {
                   <h2 className="text-primary font-bold text-lg leading-snug">
                     {item.name}
                   </h2>
-                  <span className="text-accent font-bold text-lg whitespace-nowrap">
-                    {item.priceLabel || `Ksh ${item.price?.toLocaleString()}`}
-                  </span>
+                  <div className="flex flex-col items-end whitespace-nowrap">
+                    {isOnSale ? (
+                      <>
+                        <span className="text-accent font-bold text-lg">{`Ksh ${item.sale_price?.toLocaleString()}`}</span>
+                        <span className="text-xs text-gray-400 line-through">{`Ksh ${item.price?.toLocaleString()}`}</span>
+                      </>
+                    ) : (
+                      <span className="text-accent font-bold text-lg">
+                        {item.priceLabel || `Ksh ${item.price?.toLocaleString()}`}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <p className="text-gray-500 text-sm leading-relaxed mb-4">

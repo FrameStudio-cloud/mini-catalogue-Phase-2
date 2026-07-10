@@ -12,7 +12,7 @@ function Footer() {
     { icon: <FaFacebook size={18} />, href: shop.facebook },
     { icon: <FaTiktok size={18} />, href: shop.tiktok },
     { icon: <FaWhatsapp size={18} />, href: `https://wa.me/${shop.whatsapp}` },
-  ]
+  ].filter(s => s.href)
 
   const contactItems = [
     { icon: <MdLocationOn size={18} className="text-accent mt-0.5 flex-shrink-0" />, content: shop.location },
@@ -36,9 +36,15 @@ function Footer() {
         <div className="grid grid-cols-1 gap-12 md:grid-cols-3">
           {/* Brand */}
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <span className="text-2xl font-bold">{shop.name}</span>
-              {shop.nameAccent && <span className="text-2xl font-light" style={{ color: 'var(--accent)' }}>{shop.nameAccent}</span>}
+            <div className="flex items-center gap-3 mb-4">
+              {shop.logo_url ? (
+                <img src={shop.logo_url} alt={shop.name} className="h-10 w-auto object-contain" />
+              ) : (
+                <>
+                  <span className="text-2xl font-bold">{shop.name}</span>
+                  {shop.nameAccent && <span className="text-2xl font-light" style={{ color: 'var(--accent)' }}>{shop.nameAccent}</span>}
+                </>
+              )}
             </div>
             <p className="mb-6 leading-relaxed text-gray-400">
               {shop.description}

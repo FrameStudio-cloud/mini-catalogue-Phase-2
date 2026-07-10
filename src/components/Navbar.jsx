@@ -32,15 +32,21 @@ function Navbar() {
     >
       <div className="flex items-center justify-between max-w-6xl px-4 mx-auto">
         <a href="#home" className="flex items-center gap-1">
-          <span
-            className={`text-2xl font-bold transition-colors ${scrolled ? "text-primary" : "text-white"}`}
-            style={scrolled ? {} : { color: 'white' }}
-          >
-            {shop.name}
-          </span>
-          <span className="text-2xl font-light" style={{ color: 'var(--accent)' }}>
-            {shop.nameAccent}
-          </span>
+          {shop.logo_url ? (
+            <img src={shop.logo_url} alt={shop.name} className="h-8 w-auto object-contain" />
+          ) : (
+            <>
+              <span
+                className={`text-2xl font-bold transition-colors ${scrolled ? "text-primary" : "text-white"}`}
+                style={scrolled ? {} : { color: 'white' }}
+              >
+                {shop.name}
+              </span>
+              <span className="text-2xl font-light" style={{ color: 'var(--accent)' }}>
+                {shop.nameAccent}
+              </span>
+            </>
+          )}
         </a>
 
         <div className="items-center hidden gap-8 md:flex">

@@ -10,6 +10,7 @@ import AdminLogin from './admin/AdminLogin'
 import AdminDashboard from './admin/AdminDashboard'
 import ProtectedRoute from './admin/ProtectedRoute'
 import CartDrawer from './components/CartDrawer'
+import ChatWidget from './components/ChatWidget'
 import PublicProduct from './pages/PublicProduct'
 
 function App() {
@@ -26,6 +27,7 @@ function App() {
             <Footer />
             <BackToTop />
             <WhatsAppFloat />
+            <ChatWidget />
             <CartDrawer />
           </div>
         }

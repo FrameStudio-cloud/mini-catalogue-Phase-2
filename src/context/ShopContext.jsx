@@ -98,7 +98,7 @@ export function ShopProvider({ children }) {
         const data = await api(`/api/banners?shop_id=${shopId}`);
         if (data && data.length > 0) {
           const heroSlides = data
-            .filter(b => b.type === "hero")
+            .filter(b => b.type === "hero" && b.image_url)
             .map(b => ({
               id: b.id,
               image: b.image_url,

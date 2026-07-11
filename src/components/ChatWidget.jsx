@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { FiMessageCircle, FiX, FiSend, FiChevronDown, FiChevronUp, FiPhone, FiShoppingBag, FiAlertCircle, FiLock } from 'react-icons/fi'
-import { supabase } from '../lib/supabase'
 import { getShopId, getShopSettings } from '../lib/shop'
+import { api } from '../lib/api'
 import { useShop } from '../context/ShopContext'
 
 function ChatWidget() {
@@ -24,9 +24,10 @@ function ChatWidget() {
   const { shop } = useShop()
   const [shopSettings, setShopSettings] = useState(null)
 
-  const isPro = config?.pro_until && new Date(config.pro_until) > new Date()
-
-  const isFree = !isPro
+  const tier = config?.plan_tier || "free"
+  const isProActive = tier === "pro" && config?.pro_until && new Date(config.pro_until) > new Date()
+  const canUseAI = isProActive || tier === "beta"
+  const canUseCallbacks = canUseAI || tier === "starter"
 
   useEffect(() => {
     (async () => {
@@ -34,14 +35,14 @@ function ChatWidget() {
       if (!shopId) return
       shopIdRef.current = shopId
 
-      const [cfgRes, faqRes, settings] = await Promise.all([
-        supabase.from('chat_config').select('*').eq('shop_id', shopId).maybeSingle(),
-        supabase.from('chat_faqs').select('*').eq('shop_id', shopId).order('sort_order').limit(200),
+      const [cfg, faqData, settings] = await Promise.all([
+        api(`/api/chat/config?shop_id=${shopId}`).catch(() => null),
+        api(`/api/chat/faqs?shop_id=${shopId}`).catch(() => []),
         getShopSettings(),
       ])
 
-      if (cfgRes.data) setConfig(cfgRes.data)
-      if (faqRes.data) setFaqs(faqRes.data)
+      if (cfg) setConfig(cfg)
+      if (faqData) setFaqs(faqData)
       if (settings) setShopSettings(settings)
 
       const stored = localStorage.getItem(`chat_ids_${shopId}`)
@@ -49,11 +50,7 @@ function ChatWidget() {
         try {
           const ids = JSON.parse(stored)
           if (ids.length > 0) {
-            const { data } = await supabase
-              .from('chat_messages')
-              .select('*')
-              .in('id', ids)
-              .order('created_at', { ascending: false })
+            const data = await api(`/api/chat/messages?ids=${ids.join(',')}`)
             if (data) setMessages(data)
           }
         } catch {}
@@ -71,11 +68,7 @@ function ChatWidget() {
       try {
         const ids = JSON.parse(stored)
         if (ids.length === 0) return
-        const { data } = await supabase
-          .from('chat_messages')
-          .select('*')
-          .in('id', ids)
-          .order('created_at', { ascending: false })
+        const data = await api(`/api/chat/messages?ids=${ids.join(',')}`)
         if (data) setMessages(data)
       } catch {}
     }, 5000)
@@ -86,12 +79,7 @@ function ChatWidget() {
     const sid = shopIdRef.current
     if (!sid) return null
 
-    const { data: products } = await supabase
-      .from('catalogue')
-      .select('name, price, category, description, featured')
-      .eq('shop_id', sid)
-      .eq('available', true)
-      .limit(100)
+    const products = await api(`/api/catalogue?shop_id=${sid}&available=true`).catch(() => [])
 
     return {
       shopName: shopSettings?.store_name || shop.name + (shop.nameAccent ? ` ${shop.nameAccent}` : ''),
@@ -121,7 +109,7 @@ function ChatWidget() {
     if (!ctx) { setSending(false); return }
 
     try {
-      const res = await fetch('/api/chat-answer', {
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/chat/answer`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ shopContext: ctx, question: question.trim() }),
@@ -152,23 +140,27 @@ function ChatWidget() {
 
   async function handleCallback() {
     if (!cbName.trim() || !cbPhone.trim() || !shopIdRef.current) return
-    await supabase.from('chat_callbacks').insert({
-      shop_id: shopIdRef.current,
-      name: cbName.trim(),
-      phone: cbPhone.trim(),
-      question: lastAiQuestion,
-      status: 'pending',
+    await api(`/api/chat/callbacks`, {
+      method: 'POST',
+      body: JSON.stringify({
+        shop_id: shopIdRef.current,
+        name: cbName.trim(),
+        phone: cbPhone.trim(),
+        question: lastAiQuestion,
+      }),
     })
     setCbSent(true)
   }
 
   async function handleStockAlert() {
     if (!cbName.trim() || !cbPhone.trim() || !shopIdRef.current || !aiResponse?.outOfStockProduct) return
-    await supabase.from('chat_stock_alerts').insert({
-      shop_id: shopIdRef.current,
-      product_name: aiResponse.outOfStockProduct,
-      customer_note: lastAiQuestion,
-      status: 'pending',
+    await api(`/api/chat/stock-alerts`, {
+      method: 'POST',
+      body: JSON.stringify({
+        shop_id: shopIdRef.current,
+        product_name: aiResponse.outOfStockProduct,
+        customer_note: lastAiQuestion,
+      }),
     })
     setSaSent(true)
   }
@@ -213,12 +205,7 @@ function ChatWidget() {
               <p className="text-sm font-semibold">
                 {config?.welcome_message || 'Hi! How can we help you today?'}
               </p>
-              {isFree && (
-                <span className="text-[10px] bg-white/20 rounded-full px-2 py-0.5">Free</span>
-              )}
-              {isPro && (
-                <span className="text-[10px] bg-white/20 rounded-full px-2 py-0.5">Pro</span>
-              )}
+              <span className="text-[10px] bg-white/20 rounded-full px-2 py-0.5 capitalize">{tier}</span>
             </div>
           </div>
 
@@ -243,14 +230,40 @@ function ChatWidget() {
               </div>
             )}
 
-            {isFree && (
+            {tier === "free" && (
               <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 text-center">
                 <FiLock size={20} className="mx-auto mb-2 text-gray-400" />
                 <p className="text-xs text-gray-500">Upgrade to <span className="font-semibold text-gray-700">Pro Plan</span> to unlock the smart assistant — get instant AI answers, order guidance, and off-hours callback capture.</p>
               </div>
             )}
 
-            {isPro && view === 'main' && (
+            {tier === "starter" && view === 'main' && (
+              <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
+                <p className="text-xs font-semibold text-blue-600 mb-2">Ask us a question</p>
+                <textarea
+                  rows={2}
+                  placeholder="Type your question..."
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:border-blue-400 placeholder-gray-400 mb-2"
+                />
+                {!aiResponse && (
+                  <button
+                    onClick={async () => {
+                      setLastAiQuestion(question.trim())
+                      setView('callback')
+                    }}
+                    disabled={!question.trim()}
+                    className="w-full py-2 text-white text-sm font-semibold rounded-lg disabled:opacity-50 flex items-center justify-center gap-2"
+                    style={{ backgroundColor: color }}
+                  >
+                    <FiSend size={14} /> Submit
+                  </button>
+                )}
+              </div>
+            )}
+
+            {canUseAI && view === 'main' && (
               <div>
                 <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Ask anything</p>
                 <textarea
@@ -273,14 +286,14 @@ function ChatWidget() {
               </div>
             )}
 
-            {isPro && view === 'waiting' && (
+            {canUseAI && view === 'waiting' && (
               <div className="text-center py-6">
                 <div className="w-8 h-8 border-2 border-blue-400 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
                 <p className="text-xs text-gray-400">Thinking...</p>
               </div>
             )}
 
-            {isPro && view === 'answer' && aiResponse && (
+            {canUseAI && view === 'answer' && aiResponse && (
               <div>
                 <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
                   <p className="text-xs font-semibold text-blue-600 mb-1 uppercase tracking-wider">Assistant</p>
@@ -304,11 +317,11 @@ function ChatWidget() {
               </div>
             )}
 
-            {isPro && view === 'stock-alert' && (
+            {canUseAI && view === 'stock-alert' && (
               <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
                 {saSent ? (
                   <div className="text-center py-3">
-                    <FiCheck size={24} className="mx-auto mb-2 text-amber-500" />
+                    <span className="text-4xl mb-2 block">✅</span>
                     <p className="text-sm font-medium text-amber-800">We'll let you know when it's back!</p>
                     <button onClick={reset} className="mt-2 text-xs text-amber-600 underline">Ask another question</button>
                   </div>
@@ -349,11 +362,11 @@ function ChatWidget() {
               </div>
             )}
 
-            {isPro && view === 'callback' && (
+            {canUseCallbacks && view === 'callback' && (
               <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                 {cbSent ? (
                   <div className="text-center py-3">
-                    <FiCheck size={24} className="mx-auto mb-2 text-green-500" />
+                    <span className="text-4xl mb-2 block">✅</span>
                     <p className="text-sm font-medium text-gray-800">We'll call you back!</p>
                     <p className="text-xs text-gray-400 mt-1">We'll get back to you during business hours.</p>
                     <button onClick={reset} className="mt-2 text-xs text-gray-500 underline">Ask another question</button>
@@ -395,7 +408,7 @@ function ChatWidget() {
               </div>
             )}
 
-            {isPro && view === 'order' && aiResponse && (
+            {canUseAI && view === 'order' && aiResponse && (
               <div>
                 <div className="bg-green-50 border border-green-100 rounded-xl p-4">
                   <p className="text-xs font-semibold text-green-600 mb-1 uppercase tracking-wider">Assistant</p>

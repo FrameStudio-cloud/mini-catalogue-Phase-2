@@ -3,8 +3,8 @@ import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { FiArrowLeft, FiShoppingBag, FiCheck, FiMinus, FiPlus } from "react-icons/fi";
 import { FaWhatsapp } from "react-icons/fa";
-import { supabase } from "../lib/supabase";
 import { getShopId } from "../lib/shop";
+import { api } from "../lib/api";
 import { useCart } from "../context/CartContext";
 import Badge from "../components/Badge";
 
@@ -25,22 +25,13 @@ function PublicProduct() {
       const shopId = await getShopId();
       if (!shopId) { setNotFound(true); setLoading(false); return }
 
-      const { data: settings } = await supabase
-        .from("store_settings")
-        .select("whatsapp")
-        .eq("shop_id", shopId)
-        .maybeSingle();
+      const settings = await api(`/api/settings?shop_id=${shopId}`);
       if (settings?.whatsapp) setShopWhatsapp(settings.whatsapp);
 
-      const { data } = await supabase
-        .from("catalogue")
-        .select("*")
-        .eq("shop_id", shopId)
-        .or(`id.eq.${id},product_id.eq.${id}`)
-        .maybeSingle();
+      const data = await api(`/api/catalogue?shop_id=${shopId}&id=${id}`);
 
-      if (data) {
-        setItem(data);
+      if (data && data.length > 0) {
+        setItem(data[0]);
       } else {
         setNotFound(true);
       }

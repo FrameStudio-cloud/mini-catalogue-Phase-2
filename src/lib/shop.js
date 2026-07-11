@@ -1,4 +1,4 @@
-import { supabase } from "./supabase";
+import { api } from "./api";
 
 let cachedShopId = null;
 let cachedSettings = null;
@@ -8,29 +8,12 @@ export async function getShopId() {
 
   const slug = import.meta.env.VITE_SHOP_SLUG;
   if (slug) {
-    const { data } = await supabase
-      .from("shops")
-      .select("id")
-      .eq("slug", slug)
-      .single();
-    if (data) {
-      cachedShopId = data.id;
-      return data.id;
+    const shop = await api(`/api/shop?slug=${encodeURIComponent(slug)}`);
+    if (shop?.id) {
+      cachedShopId = shop.id;
+      return shop.id;
     }
     return null;
-  }
-
-  const host = window.location.hostname;
-  const { data } = await supabase
-    .from("store_settings")
-    .select("shop_id")
-    .ilike("website_url", `%${host}%`)
-    .limit(1)
-    .maybeSingle();
-
-  if (data) {
-    cachedShopId = data.shop_id;
-    return data.shop_id;
   }
 
   return null;
@@ -42,21 +25,11 @@ export async function getShopSettings() {
   const shopId = await getShopId();
   if (!shopId) return null;
 
-  const { data } = await supabase
-    .from("store_settings")
-    .select("*")
-    .eq("shop_id", shopId)
-    .single();
-
+  const data = await api(`/api/settings?shop_id=${shopId}`);
   if (data) {
     cachedSettings = data;
     return data;
   }
 
   return null;
-}
-
-export function withShop(payload) {
-  if (!cachedShopId) throw new Error("Shop not loaded yet");
-  return { ...payload, shop_id: cachedShopId };
 }

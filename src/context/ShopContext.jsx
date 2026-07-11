@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import { supabase } from "../lib/supabase";
 import { getShopId, getShopSettings } from "../lib/shop";
+import { api } from "../lib/api";
 import shopConfig from "../config/shop";
 
 const defaultShop = {
@@ -67,7 +67,6 @@ function parseTheme(theme) {
 
 export function ShopProvider({ children }) {
   const [shop, setShop] = useState(defaultShop);
-
   const [banners, setBanners] = useState([]);
 
   useEffect(() => {
@@ -96,13 +95,7 @@ export function ShopProvider({ children }) {
 
       const shopId = await getShopId();
       if (shopId) {
-        const { data } = await supabase
-          .from("banners")
-          .select("*")
-          .eq("shop_id", shopId)
-          .eq("active", true)
-          .order("sort_order");
-
+        const data = await api(`/api/banners?shop_id=${shopId}`);
         if (data && data.length > 0) {
           const heroSlides = data
             .filter(b => b.type === "hero")

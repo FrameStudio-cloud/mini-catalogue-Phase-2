@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { supabase } from '../lib/supabase'
 import { getShopId } from '../lib/shop'
+import { api } from '../lib/api'
 import fallbackCatalogue from '../config/catalogue'
 import CatalogueCard from './CatalogueCard'
 import { CatalogueModal } from './CatalogueModal'
@@ -34,14 +34,9 @@ function Catalogue() {
         setLoading(false)
         return
       }
-      const { data, error } = await supabase
-        .from('catalogue')
-        .select('*')
-        .eq('shop_id', shopId)
-        .eq('available', true)
-        .order('created_at', { ascending: false })
+      const data = await api(`/api/catalogue?shop_id=${shopId}&available=true`)
 
-      if (error || !data?.length) {
+      if (!data || !data.length) {
         setItems(fallbackCatalogue.map(normalizeItem))
       } else {
         setItems(data.map(normalizeItem))

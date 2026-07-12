@@ -69,6 +69,9 @@ function PublicProduct() {
   const sizes = item.sizes || item.variants?.sizes;
   const colors = item.colors || item.variants?.colors;
   const needsVariants = sizes || colors;
+  const variantEntries = item.variants
+    ? Object.entries(item.variants).filter(([k, v]) => k !== 'sizes' && k !== 'colors' && typeof v === 'string')
+    : [];
 
   const now = new Date();
   const isOnSale = item.sale_price != null && (!item.sale_ends_at || new Date(item.sale_ends_at) > now);
@@ -218,6 +221,20 @@ function PublicProduct() {
                   </div>
                 )}
                 {error && <p className="text-xs text-red-500">{error}</p>}
+              </div>
+            )}
+
+            {variantEntries.length > 0 && (
+              <div className="mb-5">
+                <p className="text-xs font-semibold tracking-widest uppercase text-gray-400 mb-3">Attributes</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {variantEntries.map(([key, val]) => (
+                    <div key={key} className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2">
+                      <FiCheck className="w-3 h-3 text-accent flex-shrink-0" />
+                      <span className="text-xs text-gray-600">{key}: {val}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 

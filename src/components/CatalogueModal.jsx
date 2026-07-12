@@ -34,6 +34,9 @@ export function CatalogueModal({ item, onClose }) {
   const sizes = item.sizes || item.variants?.sizes;
   const colors = item.colors || item.variants?.colors;
   const needsVariants = sizes || colors;
+  const variantEntries = item.variants
+    ? Object.entries(item.variants).filter(([k, v]) => k !== 'sizes' && k !== 'colors' && typeof v === 'string')
+    : [];
 
   const now = new Date();
   const isOnSale = item.sale_price != null && (!item.sale_ends_at || new Date(item.sale_ends_at) > now);
@@ -184,25 +187,41 @@ export function CatalogueModal({ item, onClose }) {
                   </div>
                 )}
 
-                {item.specs && (
+                {variantEntries.length > 0 && (
                   <div className="mb-4">
                     <p className="text-xs font-semibold tracking-widest uppercase text-gray-400 mb-3">
-                      Specifications
+                      Attributes
                     </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {item.specs.map((spec) => (
-                        <div key={spec} className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2">
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#e94560" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M20 6L9 17l-5-5" />
-                          </svg>
-                          <span className="text-xs text-gray-600">{spec}</span>
-                        </div>
+                    <div className="flex flex-wrap gap-2">
+                      {variantEntries.map(([key, val]) => (
+                        <span key={key} className="inline-flex items-center gap-1.5 text-xs text-blue-700 bg-blue-50 px-3 py-1.5 rounded-lg">
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                          {key}: {val}
+                        </span>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {item.includes && (
+                {item.specs && item.specs.length > 0 && (
+                  <div className="mb-4">
+                    <p className="text-xs font-semibold tracking-widest uppercase text-gray-400 mb-3">
+                      Specifications
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {item.specs.map((spec) => (
+                        <span key={spec} className="inline-flex items-center gap-1.5 text-xs text-gray-600 bg-gray-100 px-3 py-1.5 rounded-lg">
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#e94560" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+                            <path d="M20 6L9 17l-5-5" />
+                          </svg>
+                          {spec}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {item.includes && item.includes.length > 0 && (
                   <div className="mb-5">
                     <p className="text-xs font-semibold tracking-widest uppercase text-gray-400 mb-3">
                       What&apos;s Included
@@ -210,11 +229,11 @@ export function CatalogueModal({ item, onClose }) {
                     <div className="flex flex-col gap-2">
                       {item.includes.map((inc, i) => (
                         <div key={i} className="flex items-start gap-3">
-                          <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <span className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center flex-shrink-0 mt-0.5">
                             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#e94560" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                               <path d="M20 6L9 17l-5-5" />
                             </svg>
-                          </div>
+                          </span>
                           <span className="text-sm text-gray-600">{inc}</span>
                         </div>
                       ))}
